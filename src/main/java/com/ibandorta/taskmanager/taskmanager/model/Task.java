@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 
 import com.ibandorta.taskmanager.taskmanager.model.Status;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name= "tasks")
@@ -23,17 +24,32 @@ public class Task {
     private LocalDateTime createdAt;
     private LocalDateTime updateAt;
 
+
+    @ManyToOne
+    @JoinColumn(name="user_id")
+    private User user;
+
+    @ManyToOne
+    @JoinColumn(name ="category_id")
+    private TaskCategory category;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
+    private List<TaskComment> comments;
+
     public Task(){
 
     }
 
-    public Task(Long id, String title, String description, Status status, LocalDateTime createdAt, LocalDateTime updateAt) {
+    public Task(Long id, String title, String description, Status status, LocalDateTime createdAt, LocalDateTime updateAt, User user, TaskCategory category, List<TaskComment> comments) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.status = status;
         this.createdAt = createdAt;
         this.updateAt = updateAt;
+        this.user = user;
+        this.category = category;
+        this.comments = comments;
     }
 
     public Long getId() {
@@ -82,5 +98,29 @@ public class Task {
 
     public void setUpdateAt(LocalDateTime updateAt) {
         this.updateAt = updateAt;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
+
+    public TaskCategory getCategory() {
+        return category;
+    }
+
+    public void setCategory(TaskCategory category) {
+        this.category = category;
+    }
+
+    public List<TaskComment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<TaskComment> comments) {
+        this.comments = comments;
     }
 }
