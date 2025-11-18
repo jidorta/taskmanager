@@ -1,12 +1,17 @@
 package com.ibandorta.taskmanager.taskmanager.controller;
 
 
+import com.ibandorta.taskmanager.taskmanager.dto.ApiResponse;
 import com.ibandorta.taskmanager.taskmanager.model.Task;
+import com.ibandorta.taskmanager.taskmanager.repository.TaskRepository;
 import com.ibandorta.taskmanager.taskmanager.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -15,47 +20,96 @@ import java.util.List;
 public class TaskController {
 
     @Autowired
-    private TaskService taskService;
+    private TaskRepository taskRepository;
 
     //Obtener todas las tareas
     @GetMapping
-    public List<Task>getAllTask(){
-        return taskService.getAllTasks();
+    public ResponseEntity<ApiResponse<List<Task>>>getAllTask(){
+        ApiResponse<List<Task>>response = new ApiResponse<>();
+        response.setTimestamp(LocalDateTime.now());
+
+        List<Task>tasks = taskRepository.findAll();
+        response.setStatusCode(HttpStatus.OK.value());
+        response.setData(tasks);
+
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task) {
-        Task createdTask = taskService.createTask(task);
-        return ResponseEntity.ok(createdTask);
+    public ResponseEntity<ApiResponse<Task>> createTask(@Valid @RequestBody Task newtask) {
+        Task savedTask = taskRepository.save(newtask);
+
+        ApiResponse<Task> response = new ApiResponse<>();
+        response.setStatusCode(HttpStatus.CREATED.value());
+        response.setData(savedTask);
+        response.setTimestamp(LocalDateTime.now());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
+ //-----------GET TASK BY ID --------------------------
     @GetMapping("/{id}")
-    public ResponseEntity<Task>getTaskById(@PathVariable Long id){
-        return taskService.getTaskById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<ApiResponse<Task>>getTaskById(@PathVariable Long id){
+        ApiResponse<Task> response = new ApiResponse<>();
+        response.setTimestamp(LocalDateTime.now());
+
+        return taskRepository.findById(id)
+                .map(task -> {
+                    response.setStatusCode(HttpStatus.OK.value());
+                    response.setData(task);
+                    return ResponseEntity.ok(response);
+                })
+                .orElseGet(()->{
+                   response.setStatusCode(HttpStatus.NOT_FOUND.value());
+                   response.setError("Tarea no encontrada");
+                   return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
+                });
     }
 
     // Actualizar una tarea
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody Task updatedTask){
-        try{
-            Task task = taskService.updateTask(id, updatedTask);
-            return ResponseEntity.ok(task);
-        }catch(RuntimeException e){
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<ApiResponse<Task>> updateTask(@PathVariable Long id, @RequestBody Task updatedTask){
+        ApiResponse<Task> response = new ApiResponse<>();
+        response.setTimestamp(LocalDateTime.now());
 
+        return taskRepository.findById(id)
+                .map(existingTask -> {
+                    existingTask.setTitle(updatedTask.getTitle());
+                    existingTask.setDescription(updatedTask.getDescription());
+                    // Si tienes más campos, se actualizan aquí.
+
+                    Task updated = taskRepository.save(existingTask);
+
+                    response.setStatusCode(HttpStatus.OK.value());
+                    response.setData(updated);
+
+                    return ResponseEntity.ok(response);
+                })
+                .orElseGet(() -> {
+                    response.setStatusCode(HttpStatus.NOT_FOUND.value());
+                    response.setError("Tarea no encontrada");
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+                });
     }
+
 
     //Eliminar una tarea
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void>deleteTask(@PathVariable Long id){
-        try{
-                taskService.deleteTask(id);
-                return ResponseEntity.noContent().build();
-        }catch(RuntimeException e){
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<ApiResponse<Void>>deleteTask(@PathVariable Long id){
+      ApiResponse<Void> response = new ApiResponse<>();
+      response.setTimestamp(LocalDateTime.now());
+
+      if (!taskRepository.existsById(id)){
+          response.setStatusCode(HttpStatus.NOT_FOUND.value());
+          response.setError("Tarea no encontrada");
+          return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+      }
+
+      taskRepository.deleteById(id);
+      response.setStatusCode(HttpStatus.NO_CONTENT.value());
+      return ResponseEntity.status(HttpStatus.NO_CONTENT).body(response);
+
     }
 }

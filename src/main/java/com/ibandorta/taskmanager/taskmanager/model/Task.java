@@ -4,6 +4,10 @@ package com.ibandorta.taskmanager.taskmanager.model;
 import jakarta.persistence.*;
 
 import com.ibandorta.taskmanager.taskmanager.model.Status;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -15,9 +19,14 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El titulo no puede estar vacío")
+    @Size(max= 100, message = "El titulo no puede tener más de 100 caracteres")
     private String title;
+
+    @Size(max=500, message = "La descripción no puede tener más de 500")
     private String description;
 
+    @NotNull(message = "El estado no puede ser nulo")
     @Enumerated(EnumType.STRING)
     private Status status;
 
@@ -36,11 +45,15 @@ public class Task {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL)
     private List<TaskComment> comments;
 
-    public Task(){
+    @ManyToOne
+    @JoinColumn(name = "project_id")
+    private Project project;
 
+
+    public Task(){
     }
 
-    public Task(Long id, String title, String description, Status status, LocalDateTime createdAt, LocalDateTime updateAt, User user, TaskCategory category, List<TaskComment> comments) {
+    public Task(Long id, String title, String description, Status status, LocalDateTime createdAt, LocalDateTime updateAt, User user, TaskCategory category, List<TaskComment> comments, Project project) {
         this.id = id;
         this.title = title;
         this.description = description;
@@ -50,6 +63,7 @@ public class Task {
         this.user = user;
         this.category = category;
         this.comments = comments;
+        this.project = project;
     }
 
     public Long getId() {
@@ -122,5 +136,13 @@ public class Task {
 
     public void setComments(List<TaskComment> comments) {
         this.comments = comments;
+    }
+
+    public Project getProject() {
+        return project;
+    }
+
+    public void setProject(Project project) {
+        this.project = project;
     }
 }

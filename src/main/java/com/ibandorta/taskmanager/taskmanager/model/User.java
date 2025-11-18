@@ -2,6 +2,9 @@ package com.ibandorta.taskmanager.taskmanager.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
@@ -13,7 +16,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "El nombre de usuario es obligatorio")
+    @Size(min=3,max=50,message = "El nombre de usuario debe tener entre 3 y 5 caracteres")
     private String username;
+
+    @NotBlank(message = "El email es obligatiro")
+    @Email(message = "El formato del email no es válido")
     private String email;
 
     @OneToMany(mappedBy = "user",cascade = CascadeType.ALL)
